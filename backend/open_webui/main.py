@@ -60,6 +60,7 @@ from starsessions.stores.redis import RedisStore
 from open_webui.utils import logger
 from open_webui.utils.audit import AuditLevel, AuditLoggingMiddleware
 from open_webui.utils.logger import start_logger
+from open_webui.pii_protection_middleware import PIIProtectionMiddleware
 from open_webui.socket.main import (
     app as socket_app,
     periodic_usage_pool_cleanup,
@@ -434,6 +435,7 @@ from open_webui.config import (
     AppConfig,
     reset_config,
 )
+from open_webui.utils.mcp.pubmed_setup import setup_pubmed_mcp
 from open_webui.env import (
     LICENSE_KEY,
     AUDIT_EXCLUDED_PATHS,
@@ -700,6 +702,14 @@ app.state.OPENAI_MODELS = {}
 
 app.state.config.TOOL_SERVER_CONNECTIONS = TOOL_SERVER_CONNECTIONS
 app.state.TOOL_SERVERS = []
+
+# Auto-register PubMed MCP server if missing
+@app.on_event("startup")
+async def _auto_register_pubmed_mcp():
+    try:
+        await setup_pubmed_mcp(app.state)
+    except Exception as e:
+        log.debug(f"PubMed MCP auto-setup skipped: {e}")
 
 ########################################
 #
@@ -1263,6 +1273,7 @@ if ENABLE_COMPRESSION_MIDDLEWARE:
 
 app.add_middleware(RedirectMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(PIIProtectionMiddleware)
 
 
 @app.middleware("http")

@@ -43,6 +43,7 @@ from open_webui.utils.payload import (
     apply_model_params_to_body_openai,
     apply_system_prompt_to_body,
 )
+from open_webui.utils.medical_integration import enhance_medical_request
 from open_webui.utils.misc import (
     convert_logit_bias_input_to_json,
 )
@@ -820,6 +821,9 @@ async def generate_chat_completion(
 
     payload = {**form_data}
     metadata = payload.pop("metadata", None)
+
+    # Enhance request with medical integration if it's a medical query
+    payload = enhance_medical_request(payload)
 
     model_id = form_data.get("model")
     model_info = Models.get_model_by_id(model_id)
