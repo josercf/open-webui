@@ -391,6 +391,39 @@ export const generateOpenAIChatCompletion = async (
 	return res;
 };
 
+export const generateOpenAIChatCompletionWithHeaders = async (
+    token: string = '',
+    body: object,
+    url: string = `${WEBUI_BASE_URL}/api`
+) => {
+    let error = null;
+
+    const res = await fetch(`${url}/chat/completions`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(body)
+    }).catch((err) => {
+        error = err?.detail ?? err;
+        return null;
+    });
+
+    if (error) throw error;
+    if (!res) throw new Error('No response');
+
+    const headers = res.headers;
+    if (!res.ok) {
+        let errBody: any;
+        try { errBody = await res.json(); } catch { errBody = { error: 'Request failed' }; }
+        throw errBody;
+    }
+    const data = await res.json();
+    return { data, headers };
+};
+
 export const synthesizeOpenAISpeech = async (
 	token: string = '',
 	speaker: string = 'alloy',

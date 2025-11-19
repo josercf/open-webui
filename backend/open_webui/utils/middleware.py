@@ -97,6 +97,9 @@ from open_webui.utils.filter import (
     get_sorted_filter_ids,
     process_filter_functions,
 )
+from open_webui.utils.medical_integration import (
+    auto_select_medical_tools,
+)
 from open_webui.utils.code_interpreter import execute_code_jupyter
 from open_webui.utils.payload import apply_system_prompt_to_body
 from open_webui.utils.mcp.client import MCPClient
@@ -1253,6 +1256,9 @@ async def process_chat_payload(request, form_data, user, metadata, model):
                 ),
                 form_data["messages"],
             )
+
+    # Auto-enable PubMed MCP for medical queries (Melhoria 3)
+    form_data = auto_select_medical_tools(form_data, request.app.state)
 
     tool_ids = form_data.pop("tool_ids", None)
     files = form_data.pop("files", None)

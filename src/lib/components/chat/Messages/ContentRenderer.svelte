@@ -134,6 +134,75 @@
 </script>
 
 <div bind:this={contentContainerElement}>
+	{#if typeof content === 'string' && /Referências:/.test(content)}
+		<div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm p-4 my-2">
+			<Markdown
+				{id}
+				{content}
+				{model}
+				{save}
+				{preview}
+				{done}
+				{editCodeBlock}
+				{topPadding}
+				sourceIds={(sources ?? []).reduce((acc, source) => {
+					let ids = [];
+					source.document.forEach((document, index) => {
+						if (model?.info?.meta?.capabilities?.citations == false) {
+							ids.push('N/A');
+							return ids;
+						}
+
+						const metadata = source.metadata?.[index];
+						const id = metadata?.source ?? 'N/A';
+
+						if (metadata?.name) {
+							ids.push(metadata.name);
+							return ids;
+						}
+
+						if (id.startsWith('http://') || id.startsWith('https://')) {
+							ids.push(id);
+						} else {
+							ids.push(source?.source?.name ?? id);
+						}
+
+						return ids;
+					});
+
+					acc = [...acc, ...ids];
+
+					// remove duplicates
+					return acc.filter((item, index) => acc.indexOf(item) === index);
+				}, [])}
+				{onSourceClick}
+				{onTaskClick}
+				{onSave}
+				onUpdate={async (token) => {
+					const { lang, text: code } = token;
+
+					if (
+						($settings?.detectArtifacts ?? true) &&
+						(['html', 'svg'].includes(lang) || (lang === 'xml' && code.includes('svg'))) &&
+						!$mobile &&
+						$chatId
+					) {
+						await tick();
+						showArtifacts.set(true);
+						showControls.set(true);
+					}
+				}}
+				onPreview={async (value) => {
+					console.log('Preview', value);
+					await artifactCode.set(value);
+					await showControls.set(true);
+					await showArtifacts.set(true);
+					await showOverview.set(false);
+					await showEmbeds.set(false);
+				}}
+			/>
+		</div>
+	{:else}
 	<Markdown
 		{id}
 		{content}
@@ -199,6 +268,7 @@
 			await showEmbeds.set(false);
 		}}
 	/>
+	{/if}
 </div>
 
 {#if floatingButtons && model}

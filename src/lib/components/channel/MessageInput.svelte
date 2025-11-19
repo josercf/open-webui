@@ -6,7 +6,7 @@
 
 	const i18n = getContext('i18n');
 
-	import { config, mobile, settings, socket, user, banners } from '$lib/stores';
+	import { config, mobile, settings, socket, user } from '$lib/stores';
 	import {
 		convertHeicToJpeg,
 		compressImage,
@@ -73,7 +73,6 @@
 	let recording = false;
 	let content = '';
 	let files = [];
-	let showPIIWarning = false;
 
 	let filesInputElement;
 	let inputFiles;
@@ -545,34 +544,7 @@
 			return;
 		}
 
-		// Lightweight PII detection (CPF, endereço, data de nascimento)
-		try {
-			const text = (content || '').toLowerCase();
-			const cpfRegex = /(\b\d{3}[\.\s]?\d{3}[\.\s]?\d{3}[-\s]?\d{2}\b)/;
-			const addressHints = /(rua|avenida|travessa|rodovia|estrada|praça|praca|logradouro|bairro|cep|nº|numero)/;
-			const dobHints = /(nascid[oa]|data de nascimento|dn\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b)/;
-			if (cpfRegex.test(text) || addressHints.test(text) || dobHints.test(text)) {
-				// Exibir card local no chat e também banner global
-				showPIIWarning = true;
-				banners.update((list) => {
-					const id = `pii-${Date.now()}`;
-					return [
-						{
-							id,
-							type: 'warning',
-							title: 'Proteção de Dados de Pacientes',
-							content:
-								'⚠️ Detectamos possíveis dados sensíveis (ex.: CPF, endereço ou data de nascimento). Não compartilhe informações de pacientes. Remova PII e descreva apenas o caso clínico de forma anônima.',
-							dismissible: true,
-							timestamp: Math.floor(Date.now() / 1000)
-						},
-						...list
-					];
-				});
-			}
-		} catch (e) {
-			// noop – não bloquear envio por falha no detector
-		}
+		// PII warnings handled by backend middleware; avoid client-side regex
 
 		onSubmit({
 			content,
@@ -892,19 +864,7 @@
 							{/if}
 
 							<div class="px-2.5">
-								{#if showPIIWarning}
-									<div class="mx-2 -mt-1 mb-2 px-3 py-2 rounded-xl bg-yellow-500/20 text-yellow-800 dark:text-yellow-200 border border-yellow-400/40">
-										<div class="text-xs font-semibold mb-0.5">Proteção de Dados de Pacientes</div>
-										<div class="text-xs">
-											⚠️ Detectamos possíveis dados sensíveis (ex.: CPF, endereço ou data de nascimento). Não compartilhe informações de pacientes. Remova PII e descreva apenas o caso clínico de forma anônima.
-										</div>
-										<div class="text-right mt-1">
-											<button class="text-[11px] underline" type="button" on:click={() => (showPIIWarning = false)}>
-												Entendi
-											</button>
-										</div>
-									</div>
-								{/if}
+
 								<div
 									class="scrollbar-hidden rtl:text-right ltr:text-left bg-transparent dark:text-gray-100 outline-hidden w-full pt-2.5 pb-[5px] px-1 resize-none h-fit max-h-96 overflow-auto"
 								>
